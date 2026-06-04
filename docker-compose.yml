@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DB_PATH=/app/backend/db/football.db
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - FOOTBALL_DATA_API_KEY=${FOOTBALL_DATA_API_KEY}
+      - ODDS_API_KEY=${ODDS_API_KEY}
+    volumes:
+      - db-data:/app/backend/db
+
+volumes:
+  db-data:

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚽ Lịch Sử Dự Đoán — Football Predictor</title>
+  <meta name="description" content="Thống kê tỷ lệ chính xác và lịch sử dự đoán của mô hình" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Custom styles for history page to make it premium */
+    .stats-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .stat-val {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .stat-lbl {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .history-table-card {
+      overflow-x: auto;
+    }
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+    .history-table th, .history-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .history-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+    .history-table tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+    .badge-correct {
+      background: rgba(34,197,94,0.15);
+      color: var(--green);
+      border: 1px solid rgba(34,197,94,0.3);
+    }
+    .badge-incorrect {
+      background: rgba(239,68,68,0.15);
+      color: var(--red);
+      border: 1px solid rgba(239,68,68,0.3);
+    }
+    .chart-card {
+      margin-bottom: 20px;
+    }
+    .chart-container {
+      position: relative;
+      height: 250px;
+      width: 100%;
+    }
+  </style>
+  <!-- Load Chart.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- ═══ HEADER ═══════════════════════════════════════════════════════════ -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-icon">⚽</span>
+        <div>
+          <h1 class="brand-title">Football Predictor</h1>
+          <p class="brand-sub">AI-Powered · Poisson · ELO · Dixon-Coles</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <nav class="nav-menu" style="margin-right: 15px;">
+          <a href="index.html" class="nav-link" style="color: var(--text-muted); font-weight: 500; text-decoration: none; margin-right: 15px;">Dự Đoán</a>
+          <a href="history.html" class="nav-link active" style="color: var(--primary); font-weight: 600; text-decoration: none;">Lịch Sử</a>
+        </nav>
+        <div class="live-indicator" id="liveIndicator">
+          <span class="live-dot"></span>
+          <span>LIVE</span>
+        </div>
+        <div class="ws-status" id="wsStatus" title="WebSocket Status">●</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN CONTENT ══════════════════════════════════════════════════════ -->
+  <main class="main">
+    <!-- ── Summary Statistics ────────────────────────────────────────────── -->
+    <section class="stats-summary-grid">
+      <div class="stat-card">
+        <span class="stat-lbl">Tổng số dự đoán</span>
+        <span class="stat-val" id="statTotal">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-lbl">Đúng thắng/hòa/thua (1X2)</span>
+        <span class="stat-val" id="stat1X2">0%</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-lbl">Đúng Tài/Xỉu 2.5</span>
+        <span class="stat-val" id="statOU">0%</span>
+      </div>
+    </section>
+
+    <!-- ── Filters ───────────────────────────────────────────────────────── -->
+    <section class="card selector-card">
+      <h2 class="card-title">🔍 Bộ Lọc Thống Kê</h2>
+      <div class="selector-grid">
+        <div class="field-group">
+          <label for="filterLeague">Giải đấu</label>
+          <select id="filterLeague" class="select-field">
+            <option value="">-- Tất cả giải đấu --</option>
+            <option value="PL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+            <option value="PD">🇪🇸 La Liga</option>
+            <option value="BL1">🇩🇪 Bundesliga</option>
+            <option value="CL">🇪🇺 Champions League</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="filterStartDate">Từ ngày</label>
+          <input type="date" id="filterStartDate" class="select-field" />
+        </div>
+        <div class="field-group">
+          <label for="filterEndDate">Đến ngày</label>
+          <input type="date" id="filterEndDate" class="select-field" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Trend Chart ────────────────────────────────────────────────────── -->
+    <section class="card chart-card">
+      <h2 class="card-title">📈 Độ chính xác theo thời gian</h2>
+      <div class="chart-container">
+        <canvas id="accuracyChart"></canvas>
+      </div>
+    </section>
+
+    <!-- ── Detailed History Table ─────────────────────────────────────────── -->
+    <section class="card history-table-card">
+      <h2 class="card-title">📋 Chi tiết lịch sử</h2>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Ngày</th>
+            <th>Giải</th>
+            <th>Trận đấu</th>
+            <th>Dự đoán</th>
+            <th>Thực tế</th>
+            <th>Đúng 1X2</th>
+            <th>Đúng T/X</th>
+            <th>Độ Tin Cậy</th>
+          </tr>
+        </thead>
+        <tbody id="historyTableBody">
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu...</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>⚽ Football Predictor · Lịch sử thống kê chính xác · Poisson + ELO + Dixon-Coles</p>
+  </footer>
+
+  <script src="js/history.js"></script>
+</body>
+</html>
