@@ -151,6 +151,28 @@ router.post('/prematch', validateMatch, async (req, res) => {
       if (matchRow) matchId = matchRow.id;
     }
 
+    // Lấy thông số cầu thủ để tính toán Squad Power
+    const homePlayers = await queryAll(db,
+      `SELECT xG90, xA90 FROM player_stats 
+       WHERE team_name = ? OR team_name = ? OR team_name LIKE ?`,
+      [homeTeam.name, homeTeam.name.replace(' FC', ''), `%${homeTeam.name.replace(' FC', '')}%`]
+    );
+    const awayPlayers = await queryAll(db,
+      `SELECT xG90, xA90 FROM player_stats 
+       WHERE team_name = ? OR team_name = ? OR team_name LIKE ?`,
+      [awayTeam.name, awayTeam.name.replace(' FC', ''), `%${awayTeam.name.replace(' FC', '')}%`]
+    );
+
+    const calcSquadPower = (players) => {
+      if (!players || players.length === 0) return 0;
+      const scores = players.map(p => (parseFloat(p.xG90) || 0) + (parseFloat(p.xA90) || 0));
+      scores.sort((a, b) => b - a);
+      return scores.slice(0, 5).reduce((sum, val) => sum + val, 0);
+    };
+
+    const homeSquadPower = calcSquadPower(homePlayers);
+    const awaySquadPower = calcSquadPower(awayPlayers);
+
     // Run statistical prediction using Rolling Form Window
     const prediction = predict({
       homeStats,
@@ -168,6 +190,8 @@ router.post('/prematch', validateMatch, async (req, res) => {
       homeRestDays,
       awayRestDays,
       homeWinRate,
+      homeSquadPower,
+      awaySquadPower,
     });
 
     // Blend with Bookmaker Odds if available

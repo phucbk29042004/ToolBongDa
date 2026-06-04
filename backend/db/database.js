@@ -49,23 +49,9 @@ export async function getDatabase() {
     return initPromise;
   }
 
-  const dbDir = path.dirname(dbPath);
-  
-  if (!fs.existsSync(dbDir) || !fs.existsSync(dbPath)) {
-    initPromise = initDatabase().then((db) => {
-      dbInstance = db;
-      return dbInstance;
-    });
-    return initPromise;
-  } else {
-    initPromise = new Promise((resolve, reject) => {
-      const db = new sqlite3.Database(dbPath, (err) => {
-        if (err) return reject(err);
-        db.run('PRAGMA journal_mode = WAL');
-        dbInstance = db;
-        resolve(db);
-      });
-    });
-    return initPromise;
-  }
+  initPromise = initDatabase().then((db) => {
+    dbInstance = db;
+    return dbInstance;
+  });
+  return initPromise;
 }

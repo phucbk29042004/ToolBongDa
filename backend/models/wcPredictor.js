@@ -59,20 +59,28 @@ export async function predictWCMatch(team1_en, team2_en, context = {}) {
   let lambda2 = 0;
 
   if (stats1 && stats2 && stats1.matches_played > 0 && stats2.matches_played > 0) {
-    const goalsScored1 = stats1.avg_goals_scored;
-    const goalsConceded1 = stats1.avg_goals_conceded;
-    const goalsScored2 = stats2.avg_goals_scored;
-    const goalsConceded2 = stats2.avg_goals_conceded;
+    // Thuật toán co mẫu (Bayesian Shrinkage) để tránh lạm phát tỷ số khi số trận đấu ít
+    const prior_weight = 4; // Số trận giả định làm mỏ neo
+    const global_avg = 1.35; // Bàn thắng trung bình quốc tế
 
-    lambda1 = goalsScored1 * goalsConceded2;
-    lambda2 = goalsScored2 * goalsConceded1;
+    const adj_scored1 = (stats1.avg_goals_scored * stats1.matches_played + global_avg * prior_weight) / (stats1.matches_played + prior_weight);
+    const adj_conceded1 = (stats1.avg_goals_conceded * stats1.matches_played + global_avg * prior_weight) / (stats1.matches_played + prior_weight);
+    const adj_scored2 = (stats2.avg_goals_scored * stats2.matches_played + global_avg * prior_weight) / (stats2.matches_played + prior_weight);
+    const adj_conceded2 = (stats2.avg_goals_conceded * stats2.matches_played + global_avg * prior_weight) / (stats2.matches_played + prior_weight);
+
+    lambda1 = adj_scored1 * adj_conceded2;
+    lambda2 = adj_scored2 * adj_conceded1;
+
+    // Giới hạn lambda để tránh lạm phát các tỷ số cực đoan (như 3-0, 0-3) quá đà
+    lambda1 = clamp(lambda1, 0.4, 2.3);
+    lambda2 = clamp(lambda2, 0.4, 2.3);
   } else {
     // ELO-only prediction fallback
     const elo_diff = elo1 - elo2;
     const win_prob = 1 / (1 + Math.pow(10, -elo_diff / 400));
     // Estimate expected goals assuming 2.5 average sum
-    lambda1 = 2.5 * win_prob;
-    lambda2 = 2.5 * (1 - win_prob);
+    lambda1 = clamp(2.3 * win_prob, 0.5, 2.0);
+    lambda2 = clamp(2.3 * (1 - win_prob), 0.5, 2.0);
     key_factors.push({ factor: 'Sử dụng dự đoán thuần ELO do thiếu thống kê bàn thắng', impact: 0, icon: '📊' });
   }
 

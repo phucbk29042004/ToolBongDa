@@ -162,6 +162,8 @@ export function predict(params) {
     awayRestDays = 4,
     homeWinRate = 0.5,
     matchDate = null,
+    homeSquadPower = 0,
+    awaySquadPower = 0,
   } = params;
 
   const homeIdNum = homeTeamId !== undefined && homeTeamId !== null ? Number(homeTeamId) : null;
@@ -246,6 +248,18 @@ export function predict(params) {
   console.log(`=== DEBUG LOGGING: WEIGHTED LAMBDAS ===`);
   console.log(` Đội nhà Lambda: ${adjHomeLambda.toFixed(4)}`);
   console.log(` Đội khách Lambda: ${adjAwayLambda.toFixed(4)}\n`);
+
+  // Hiệu chỉnh sức mạnh tấn công dựa trên phong độ thực tế của các cầu thủ chủ chốt (Top 5)
+  if (homeSquadPower > 0) {
+    const boost = Math.min(0.20, Math.max(-0.10, (homeSquadPower - 2.0) * 0.08));
+    adjHomeLambda *= (1 + boost);
+    factors.push({ factor: `Phong độ cầu thủ chủ nhà (Squad Power: ${homeSquadPower.toFixed(2)})`, impact: boost, icon: '🌟' });
+  }
+  if (awaySquadPower > 0) {
+    const boost = Math.min(0.20, Math.max(-0.10, (awaySquadPower - 2.0) * 0.08));
+    adjAwayLambda *= (1 + boost);
+    factors.push({ factor: `Phong độ cầu thủ chủ khách (Squad Power: ${awaySquadPower.toFixed(2)})`, impact: boost, icon: '🌟' });
+  }
 
   if (h2hAvgGoals > 2.5) {
     adjHomeLambda *= 1.15;

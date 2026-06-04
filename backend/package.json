@@ -16,7 +16,9 @@
     "import-xg": "node scripts/importUnderstat.js",
     "fix-json": "node scripts/fixJson.js",
     "seed-wc2026": "node scrapers/seedWC2026.js",
-    "seed-national": "node scrapers/seedNationalTeams.js"
+    "seed-national": "node scrapers/seedNationalTeams.js",
+    "import-league-stats": "node scripts/importLeagueChemp.js",
+    "import-player-stats": "node scripts/importPlayerStats.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

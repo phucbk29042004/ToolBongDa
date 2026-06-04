@@ -173,6 +173,22 @@ export function initDatabase() {
             score_team2 INTEGER DEFAULT NULL,
             status TEXT DEFAULT 'scheduled'
           )
+        `);
+
+        // 11. Bảng player_stats [NEW]
+        db.run(`
+          CREATE TABLE IF NOT EXISTS player_stats (
+            player_name TEXT,
+            team_name TEXT,
+            apps INTEGER DEFAULT 0,
+            goals INTEGER DEFAULT 0,
+            assists INTEGER DEFAULT 0,
+            xG REAL DEFAULT 0.0,
+            xA REAL DEFAULT 0.0,
+            xG90 REAL DEFAULT 0.0,
+            xA90 REAL DEFAULT 0.0,
+            PRIMARY KEY (player_name, team_name)
+          )
         `, (err) => {
           if (err) {
             console.error('[Database] Lỗi khởi tạo bảng:', err.message);
