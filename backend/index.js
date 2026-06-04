@@ -13,6 +13,7 @@ import matchesRouter from './routes/matches.js';
 import predictRouter from './routes/predict.js';
 import teamsRouter from './routes/teams.js';
 import historyRouter from './routes/history.js';
+import wc2026Router from './routes/wc2026.js';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use('/api/matches', matchesRouter);
 app.use('/api/predict', predictRouter);
 app.use('/api/teams', teamsRouter);
 app.use('/api/history', historyRouter);
+app.use('/api/wc2026', wc2026Router);
 
 // Health check
 app.get('/api/health', (req, res) => {

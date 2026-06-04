@@ -207,14 +207,76 @@ router.post('/prematch', validateMatch, async (req, res) => {
     }
 
     const blendConfidence = Math.max(prediction.result.home, prediction.result.draw, prediction.result.away);
-    // AI adjustment and analysis disabled
-    const aiAdjustment = { adjustment: { home: 0, draw: 0, away: 0 }, ou_adjustment: 0, confidence: 0, key_factor: 'No AI adjustment needed.', applied: false };
-    const aiAnalysis = {
+    let aiAdjustment = { adjustment: { home: 0, draw: 0, away: 0 }, ou_adjustment: 0, confidence: 0, key_factor: 'No AI adjustment needed.', applied: false };
+    let aiAnalysis = {
       keyFactors: [],
       riskLevel: 'medium',
       recommendation: 'Statistical model used without AI calibration.',
       summary: 'Statistical model only; no AI calibration was applied.'
     };
+
+    if (blendConfidence < 0.55) {
+      aiAdjustment = await getAIAdjustment({
+        matchId,
+        homeTeamId,
+        awayTeamId,
+        homeRecentMatches,
+        awayRecentMatches
+      });
+      aiAnalysis = await analyzeMatch({
+        matchId,
+        homeTeamId,
+        awayTeamId,
+        homeRecentMatches,
+        awayRecentMatches
+      });
+
+      if (aiAdjustment.applied) {
+        // Adjust result probabilities
+        prediction.result.home = Math.max(0, Math.min(1, prediction.result.home + aiAdjustment.adjustment.home));
+        prediction.result.draw = Math.max(0, Math.min(1, prediction.result.draw + aiAdjustment.adjustment.draw));
+        prediction.result.away = Math.max(0, Math.min(1, prediction.result.away + aiAdjustment.adjustment.away));
+        
+        const sum = prediction.result.home + prediction.result.draw + prediction.result.away;
+        if (sum > 0) {
+          prediction.result.home /= sum;
+          prediction.result.draw /= sum;
+          prediction.result.away /= sum;
+        }
+
+        // Adjust Over/Under
+        if (aiAdjustment.ou_adjustment !== 0) {
+          prediction.overUnder.over25 = Math.max(0, Math.min(1, prediction.overUnder.over25 + aiAdjustment.ou_adjustment));
+          prediction.overUnder.under25 = 1 - prediction.overUnder.over25;
+          prediction.overUnder.prediction = prediction.overUnder.over25 > 0.5 ? 'Tài' : 'Xỉu';
+
+          // Re-enforce score consistency after Over/Under adjustment!
+          if (prediction.scoreMatrix) {
+            const predictedScoreTotal = prediction.score.home + prediction.score.away;
+            const isScoreOver = predictedScoreTotal > 2.5;
+            const isOuOver = prediction.overUnder.prediction === 'Tài';
+
+            if (isScoreOver !== isOuOver) {
+              let maxProb = 0;
+              let bestScore = prediction.score;
+              for (let i = 0; i < prediction.scoreMatrix.length; i++) {
+                for (let j = 0; j < prediction.scoreMatrix[i].length; j++) {
+                  const total = i + j;
+                  const isCellOver = total > 2.5;
+                  if (isCellOver === isOuOver) {
+                    if (prediction.scoreMatrix[i][j] > maxProb) {
+                      maxProb = prediction.scoreMatrix[i][j];
+                      bestScore = { home: i, away: j };
+                    }
+                  }
+                }
+              }
+              prediction.score = bestScore;
+            }
+          }
+        }
+      }
+    }
 
     if (matchId) {
       await queryRun(db,

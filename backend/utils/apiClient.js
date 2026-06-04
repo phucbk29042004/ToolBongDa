@@ -4,6 +4,9 @@
  */
 
 import axios from 'axios';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const BASE_URL = 'https://api.football-data.org/v4';
 const DELAY_MS = 1000;        // Delay cơ bản giữa các request thông thường

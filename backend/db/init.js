@@ -110,12 +110,75 @@ export function initDatabase() {
             fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (match_id) REFERENCES matches (id)
           )
+        `);
+
+        // 7. Bảng national_teams [NEW]
+        db.run(`
+          CREATE TABLE IF NOT EXISTS national_teams (
+            id INTEGER PRIMARY KEY,
+            name TEXT,
+            name_vi TEXT,
+            confederation TEXT,
+            fifa_ranking INTEGER,
+            elo_rating REAL DEFAULT 1500,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
+        // 8. Bảng national_team_stats [NEW]
+        db.run(`
+          CREATE TABLE IF NOT EXISTS national_team_stats (
+            team_id INTEGER,
+            competition TEXT,
+            season TEXT,
+            matches_played INTEGER DEFAULT 0,
+            goals_scored INTEGER DEFAULT 0,
+            goals_conceded INTEGER DEFAULT 0,
+            wins INTEGER DEFAULT 0,
+            draws INTEGER DEFAULT 0,
+            losses INTEGER DEFAULT 0,
+            avg_goals_scored REAL DEFAULT 0.0,
+            avg_goals_conceded REAL DEFAULT 0.0,
+            clean_sheets INTEGER DEFAULT 0,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (team_id, competition, season),
+            FOREIGN KEY (team_id) REFERENCES national_teams (id)
+          )
+        `);
+
+        // 9. Bảng wc2026_groups [NEW]
+        db.run(`
+          CREATE TABLE IF NOT EXISTS wc2026_groups (
+            group_name TEXT,
+            team_name TEXT,
+            team_vi TEXT,
+            PRIMARY KEY (group_name, team_name)
+          )
+        `);
+
+        // 10. Bảng wc2026_matches [NEW]
+        db.run(`
+          CREATE TABLE IF NOT EXISTS wc2026_matches (
+            match_id INTEGER PRIMARY KEY,
+            group_name TEXT,
+            match_date TEXT,
+            match_time TEXT,
+            team1_vi TEXT,
+            team2_vi TEXT,
+            team1_en TEXT,
+            team2_en TEXT,
+            team1_flag TEXT,
+            team2_flag TEXT,
+            score_team1 INTEGER DEFAULT NULL,
+            score_team2 INTEGER DEFAULT NULL,
+            status TEXT DEFAULT 'scheduled'
+          )
         `, (err) => {
           if (err) {
             console.error('[Database] Lỗi khởi tạo bảng:', err.message);
             return reject(err);
           }
-          console.log('[Database] Đã tạo thành công tất cả các bảng dữ liệu.');
+          console.log('[Database] Đã tạo thành công tất cả các bảng dữ liệu (bao gồm ĐTQG & WC 2026).');
           resolve(db);
         });
       });

@@ -12,7 +12,11 @@
     "seed-xg": "node scrapers/understat.js",
     "fetch-odds": "node scrapers/oddsApi.js",
     "backtest": "node utils/backtest.js",
-    "mock-past-odds": "node utils/generatePastMockOdds.js"
+    "mock-past-odds": "node utils/generatePastMockOdds.js",
+    "import-xg": "node scripts/importUnderstat.js",
+    "fix-json": "node scripts/fixJson.js",
+    "seed-wc2026": "node scrapers/seedWC2026.js",
+    "seed-national": "node scrapers/seedNationalTeams.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
